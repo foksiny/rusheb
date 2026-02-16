@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { Beatmap, GameSettings, ScoreDetails, NoteType, Theme, EasingType, EventType, GameEvent, Note, KeyMode } from '../types';
+import { Beatmap, GameSettings, ScoreDetails, NoteType, EasingType, EventType, GameEvent, Note, KeyMode } from '../types';
 import { HIT_WINDOWS, SCORES, DEFAULT_KEY_BINDINGS } from '../constants';
 
 interface GameCanvasProps {
@@ -31,6 +31,16 @@ interface Star {
   size: number;
   opacity: number;
   speedMod: number; // Parallax effect
+}
+
+interface FallingKey {
+  key: string;
+  x: number;
+  y: number;
+  opacity: number;
+  scale: number;
+  rotation: number;
+  color: string;
 }
 
 interface FloatingText {
@@ -125,7 +135,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
     lastKeyPressName: '',
     cameraShake: 0,
     targetGlobalSpeedMultiplier: 1.0,
-    currentGlobalSpeedMultiplier: 1.0
+    currentGlobalSpeedMultiplier: 1.0,
+    fallingKeys: [] as FallingKey[],
+    rippleEffects: [] as { x: number; y: number; radius: number; opacity: number; color: string }[]
   });
 
   const requestRef = useRef<number>(0);
@@ -402,7 +414,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
 
       state.laneFlashes[targetNote.lane] = 1.0;
 
-      if (targetNote.speedMultiplier && targetNote.speedMultiplier !== 1.0) {
+      // Speed notes only work if practice mode is disabled
+      if (!settings.practiceMode && targetNote.speedMultiplier && targetNote.speedMultiplier !== 1.0) {
         state.targetGlobalSpeedMultiplier = targetNote.speedMultiplier;
         const textMsg = targetNote.speedMultiplier > 1 ? 'SPEED UP!' : 'SLOW DOWN!';
         addFloatingText(width / 2, height / 2, textMsg, targetNote.speedMultiplier > 1 ? '#f97316' : '#2563eb');
@@ -440,10 +453,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
 
         if (scoreAdd === SCORES.PERFECT) {
           state.score.perfect++;
-          state.cameraShake = 5;
+          state.cameraShake = settings.stupidlyCrazyEffects ? 15 : 5;
+          if (settings.stupidlyCrazyEffects) {
+            state.rippleEffects.push({ x, y: hitLineY, radius: 0, opacity: 1, color });
+          }
         } else {
           state.score.good++;
-          state.cameraShake = 2;
+          state.cameraShake = settings.stupidlyCrazyEffects ? 8 : 2;
         }
         playHitSound(targetNote.type);
         if (targetNote.mutationType) handleNoteMutation(targetNote);
@@ -468,7 +484,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
 
         state.score.score += scoreAdd;
         addFloatingText(x, hitLineY - 50, text, color);
-        addParticles(x, hitLineY, color, scoreAdd === SCORES.PERFECT ? 30 : 15, scoreAdd === SCORES.PERFECT ? 2 : 1);
+        addParticles(x, hitLineY, color, scoreAdd === SCORES.PERFECT ? (settings.stupidlyCrazyEffects ? 60 : 30) : 15, scoreAdd === SCORES.PERFECT ? 2 : 1);
 
         if (targetNote.type === NoteType.CLICK || targetNote.type === NoteType.HOLD_CLICK) {
           targetNote.hitState = 'HIT';
@@ -826,12 +842,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
             tailDrawHeight = remainingTime * finalNoteSpeed;
             tailY = hitLineY - tailDrawHeight;
 
-            // Draw active beam
+            // Draw active beam with enhanced effects
             ctx.save();
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = settings.stupidlyCrazyEffects ? 40 : 20;
             ctx.shadowColor = '#a855f7';
-            ctx.fillStyle = '#fff';
+            
+            if (settings.stupidlyCrazyEffects) {
+              // Rainbow beam effect
+              const hue = (timestamp / 10) % 360;
+              ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+            } else {
+              ctx.fillStyle = '#fff';
+            }
             ctx.fillRect(x - 5, hitLineY - tailDrawHeight, 10, tailDrawHeight);
+            
+            // Add sparkle particles for hold
+            if (settings.stupidlyCrazyEffects && Math.random() > 0.7) {
+              addParticles(x, hitLineY - Math.random() * tailDrawHeight, '#a855f7', 2, 0.5);
+            }
             ctx.restore();
           } else {
             tailDrawHeight = 0;
@@ -903,6 +931,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
           // Visual feedback for missing the note entirely
           const x = getLaneX(width, height, note.lane);
           addFloatingText(x, hitLineY, 'MISS', '#9ca3af');
+          
+          // Enhanced miss effects for stupidly crazy effects
+          if (settings.stupidlyCrazyEffects) {
+            addParticles(x, hitLineY, '#9ca3af', 40, 3);
+            state.cameraShake = 20;
+          }
         }
       }
 
@@ -1025,19 +1059,118 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
 
     ctx.restore();
 
+    // --- RENDER FALLING KEYS (Crazy Keyboard Mode) ---
+    for (let i = state.fallingKeys.length - 1; i >= 0; i--) {
+      const fk = state.fallingKeys[i];
+      fk.y += 5;
+      fk.opacity -= 0.008;
+      fk.rotation += (Math.random() - 0.5) * 2;
+      
+      if (fk.opacity <= 0 || fk.y > height + 100) {
+        state.fallingKeys.splice(i, 1);
+      } else {
+        ctx.save();
+        ctx.translate(fk.x, fk.y);
+        ctx.rotate((fk.rotation * Math.PI) / 180);
+        ctx.scale(fk.scale, fk.scale);
+        ctx.globalAlpha = fk.opacity;
+        
+        // Key background
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = fk.color;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.beginPath();
+        ctx.roundRect(-25, -25, 50, 50, 8);
+        ctx.fill();
+        
+        // Key border
+        ctx.strokeStyle = fk.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Key text
+        ctx.fillStyle = fk.color;
+        ctx.font = "900 24px 'Arial Black', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(fk.key, 0, 0);
+        
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1.0;
+
+    // --- RENDER RIPPLE EFFECTS (Stupidly Crazy Effects) ---
+    for (let i = state.rippleEffects.length - 1; i >= 0; i--) {
+      const ripple = state.rippleEffects[i];
+      ripple.radius += 15;
+      ripple.opacity -= 0.03;
+      
+      if (ripple.opacity <= 0) {
+        state.rippleEffects.splice(i, 1);
+      } else {
+        ctx.save();
+        ctx.globalAlpha = ripple.opacity;
+        ctx.strokeStyle = ripple.color;
+        ctx.lineWidth = 4;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = ripple.color;
+        ctx.beginPath();
+        ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1.0;
+
     // HUD
     if (state.combo > 0) {
       ctx.save();
       ctx.translate(50, height - 50);
-      const pulse = 1 + Math.sin(timestamp / 50) * 0.1;
-      ctx.scale(pulse, pulse);
-      ctx.fillStyle = '#fff';
-      ctx.font = "900 40px 'Arial Black', sans-serif";
-      ctx.textAlign = 'left';
-      ctx.fillText(`${state.combo}x`, 0, 0);
-      ctx.fillStyle = '#ec4899';
-      ctx.fillText(`${state.combo}x`, 2, 2);
+      
+      // Enhanced combo effects for stupidly crazy effects
+      if (settings.stupidlyCrazyEffects) {
+        const comboScale = state.combo > 50 ? 1.5 : state.combo > 25 ? 1.3 : state.combo > 10 ? 1.1 : 1;
+        const pulse = 1 + Math.sin(timestamp / 50) * 0.15 * comboScale;
+        ctx.scale(pulse, pulse);
+        
+        // Rainbow color for high combos
+        if (state.combo > 25) {
+          const hue = (timestamp / 5) % 360;
+          ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+        } else {
+          ctx.fillStyle = '#fff';
+        }
+        
+        // Glow effect
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = state.combo > 50 ? '#facc15' : state.combo > 25 ? '#ec4899' : '#fff';
+        
+        ctx.font = "900 40px 'Arial Black', sans-serif";
+        ctx.textAlign = 'left';
+        ctx.fillText(`${state.combo}x`, 0, 0);
+        
+        // Outline
+        ctx.strokeStyle = state.combo > 25 ? '#fff' : '#ec4899';
+        ctx.lineWidth = 2;
+        ctx.strokeText(`${state.combo}x`, 0, 0);
+      } else {
+        const pulse = 1 + Math.sin(timestamp / 50) * 0.1;
+        ctx.scale(pulse, pulse);
+        ctx.fillStyle = '#fff';
+        ctx.font = "900 40px 'Arial Black', sans-serif";
+        ctx.textAlign = 'left';
+        ctx.fillText(`${state.combo}x`, 0, 0);
+        ctx.fillStyle = '#ec4899';
+        ctx.fillText(`${state.combo}x`, 2, 2);
+      }
       ctx.restore();
+      
+      // Combo milestone effects
+      if (settings.stupidlyCrazyEffects && (state.combo === 10 || state.combo === 25 || state.combo === 50 || state.combo === 100)) {
+        state.rippleEffects.push({ x: width / 2, y: height / 2, radius: 0, opacity: 1, color: '#facc15' });
+        addFloatingText(width / 2, height / 2 - 100, `${state.combo}x COMBO!`, '#facc15');
+      }
     }
 
     ctx.fillStyle = '#fff';
@@ -1071,6 +1204,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
       }
       
       processHit(undefined, e.key.toUpperCase(), e.code);
+      
+      // Add falling key for crazy keyboard mode
+      if (settings.crazyKeyboardMode) {
+        const state = stateRef.current;
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const colors = ['#ec4899', '#f97316', '#facc15', '#4ade80', '#38bdf8', '#a855f7'];
+          state.fallingKeys.push({
+            key: e.key.toUpperCase(),
+            x: Math.random() * (canvas.width - 100) + 50,
+            y: -50,
+            opacity: 1,
+            scale: 1.5 + Math.random() * 0.5,
+            rotation: (Math.random() - 0.5) * 30,
+            color: colors[Math.floor(Math.random() * colors.length)]
+          });
+        }
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => processRelease(e.code);
     window.addEventListener('keydown', handleKeyDown);

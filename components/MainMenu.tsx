@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Beatmap, GameSettings, Theme, KeyMode } from '../types';
+import { Beatmap, GameSettings, KeyMode } from '../types';
 import { createBlankMap, dbHelper, DEFAULT_KEY_BINDINGS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -35,6 +35,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
   } = useAuth();
   const { success, error: toastError, info, warning } = useToast();
   const [showSettings, setShowSettings] = useState(false);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('your_beatmaps');
   const [savedMaps, setSavedMaps] = useState<Beatmap[]>([]);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
@@ -306,10 +307,28 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
   };
 
   return (
-    <div className="flex-1 flex items-center justify-between relative overflow-hidden bg-gradient-to-br from-gray-900 via-indigo-950 to-black p-10">
-      {/* Decorative background elements */}
-      <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-pink-600 rounded-full mix-blend-screen filter blur-[150px] opacity-20 animate-pulse"></div>
-      <div className="absolute bottom-[-20%] right-[-10%] w-[800px] h-[800px] bg-blue-600 rounded-full mix-blend-screen filter blur-[150px] opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="flex-1 flex flex-col lg:flex-row items-center justify-center lg:justify-between relative overflow-hidden bg-gradient-to-br from-gray-900 via-indigo-950 to-black p-4 md:p-6 lg:p-10 min-h-screen">
+      {/* Animated decorative background elements */}
+      <div className="absolute top-[-20%] left-[-10%] w-[400px] md:w-[600px] lg:w-[800px] h-[400px] md:h-[600px] lg:h-[800px] bg-pink-600 rounded-full mix-blend-screen filter blur-[100px] md:blur-[120px] lg:blur-[150px] opacity-20 animate-float"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[400px] md:w-[600px] lg:w-[800px] h-[400px] md:h-[600px] lg:h-[800px] bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] md:blur-[120px] lg:blur-[150px] opacity-20 animate-float" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute top-[30%] right-[20%] w-[200px] md:w-[300px] lg:w-[400px] h-[200px] md:h-[300px] lg:h-[400px] bg-purple-600 rounded-full mix-blend-screen filter blur-[80px] md:blur-[100px] lg:blur-[120px] opacity-15 animate-float" style={{ animationDelay: '4s' }}></div>
+      
+      {/* Floating particles */}
+      {[...Array(12)].map((_, i) => (
+        <div
+          key={i}
+          className="particle hidden md:block"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            background: i % 3 === 0 ? '#ec4899' : i % 3 === 1 ? '#a855f7' : '#3b82f6',
+            animationDelay: `${i * 0.5}s`,
+            width: `${3 + Math.random() * 4}px`,
+            height: `${3 + Math.random() * 4}px`,
+            opacity: 0.4 + Math.random() * 0.4,
+          }}
+        />
+      ))}
 
       {/* Auth Modal */}
       <AuthModal
@@ -319,17 +338,199 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
         onSwitchMode={(mode) => setAuthMode(mode)}
       />
 
+      {/* How to Play Modal */}
+      {showHowToPlay && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-gray-900 border-2 border-purple-500 rounded-3xl p-8 max-w-2xl w-full mx-4 max-h-[85vh] overflow-y-auto custom-scrollbar shadow-[0_0_50px_rgba(168,85,247,0.3)] animate-bounce-in gradient-border">
+            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+              <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 animate-text-glow">
+                How to Play
+              </h2>
+              <button 
+                onClick={() => setShowHowToPlay(false)} 
+                className="text-white hover:text-pink-400 text-3xl font-bold transition-all duration-300 hover:scale-110 hover:rotate-90"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-6 text-gray-200">
+              {/* Game Overview */}
+              <div className="bg-white/5 rounded-xl p-4">
+                <h3 className="text-xl font-bold text-pink-400 mb-2">Objective</h3>
+                <p className="text-gray-300">
+                  Hit the falling notes at the right time as they reach the bottom of the screen. 
+                  The goal is to achieve the highest score possible by hitting notes accurately and building combos!
+                </p>
+              </div>
+
+              {/* Controls */}
+              <div className="bg-white/5 rounded-xl p-4">
+                <h3 className="text-xl font-bold text-blue-400 mb-2">Controls</h3>
+                <ul className="space-y-2 text-gray-300">
+                  <li className="flex items-center gap-2">
+                    <span className="bg-gray-700 px-2 py-1 rounded font-mono text-sm">Any Key</span>
+                    <span>Hit notes (in All Keys mode)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="bg-gray-700 px-2 py-1 rounded font-mono text-sm">A S K L</span>
+                    <span>Hit notes (in Four Keys mode - customizable)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="bg-gray-700 px-2 py-1 rounded font-mono text-sm">ESC</span>
+                    <span>Pause the game</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Note Types */}
+              <div className="bg-white/5 rounded-xl p-4">
+                <h3 className="text-xl font-bold text-green-400 mb-3">Note Types</h3>
+                <div className="space-y-3">
+                  {/* Click Note - Sky Blue #38bdf8 */}
+                  <div className="flex items-start gap-3 bg-black/30 rounded-lg p-3">
+                    <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.6)]" style={{ background: 'radial-gradient(circle at 30% 30%, #ffffff, #38bdf8 40%, #000000)' }}>
+                      <div className="w-8 h-8 rounded-full border-2 border-white/50"></div>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sky-400">Click Note</h4>
+                      <p className="text-sm text-gray-400">Press any key when this note reaches the hit zone (the white line at the bottom). Timing matters - aim for PERFECT hits!</p>
+                    </div>
+                  </div>
+
+                  {/* Hold Note - Purple #a855f7 */}
+                  <div className="flex items-start gap-3 bg-black/30 rounded-lg p-3">
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <div className="w-12 h-8 rounded-t-lg shadow-[0_0_15px_rgba(168,85,247,0.6)]" style={{ background: 'radial-gradient(circle at 30% 30%, #ffffff, #a855f7 40%, #000000)' }}></div>
+                      <div className="w-6 h-16 bg-gradient-to-b from-purple-500 to-purple-600 shadow-[0_0_10px_rgba(168,85,247,0.4)]"></div>
+                      <div className="w-12 h-8 rounded-b-lg bg-purple-600 shadow-[0_0_10px_rgba(168,85,247,0.4)]"></div>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-purple-400">Hold Note</h4>
+                      <p className="text-sm text-gray-400">Press and hold when the note head reaches the hit zone. Keep holding until the tail ends. Look at the end ball color:</p>
+                      <ul className="text-sm text-gray-400 mt-1 ml-4 list-disc">
+                        <li><span className="text-yellow-400 font-bold">Yellow end</span>: You MUST release at the right moment! Releasing too early or too late breaks your combo.</li>
+                        <li><span className="text-white font-bold">White end</span>: Auto-completes when the tail ends. Just keep holding, no need to release precisely.</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Mine - Red #ef4444 */}
+                  <div className="flex items-start gap-3 bg-black/30 rounded-lg p-3">
+                    <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.6)]" style={{ background: 'radial-gradient(circle at 30% 30%, #ffffff, #ef4444 40%, #000000)' }}>
+                      <span className="text-white font-black text-xl">!</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-red-400">Mine</h4>
+                      <p className="text-sm text-gray-400">AVOID these! Do not press any key when a mine reaches the hit zone. Hitting a mine costs you -100 points and breaks your combo! Mines pass through harmlessly if you ignore them.</p>
+                    </div>
+                  </div>
+
+                  {/* Hold Click Note - Teal #2dd4bf */}
+                  <div className="flex items-start gap-3 bg-black/30 rounded-lg p-3">
+                    <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center shadow-[0_0_15px_rgba(45,212,191,0.6)]" style={{ background: 'radial-gradient(circle at 30% 30%, #ffffff, #2dd4bf 40%, #000000)' }}>
+                      <div className="w-8 h-8 rounded-full border-2 border-white/50"></div>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-teal-400">Hold Click Note</h4>
+                      <p className="text-sm text-gray-400">A special note with a unique high-pitched sound. Hit it like a regular click note - just a quick tap! These often appear alongside other notes for multi-hit patterns.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scoring */}
+              <div className="bg-white/5 rounded-xl p-4">
+                <h3 className="text-xl font-bold text-yellow-400 mb-2">Scoring</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex justify-between bg-black/30 rounded-lg px-3 py-2">
+                    <span className="text-yellow-400 font-bold">PERFECT</span>
+                    <span className="text-white">+100 pts</span>
+                  </div>
+                  <div className="flex justify-between bg-black/30 rounded-lg px-3 py-2">
+                    <span className="text-green-400 font-bold">GOOD</span>
+                    <span className="text-white">+50 pts</span>
+                  </div>
+                  <div className="flex justify-between bg-black/30 rounded-lg px-3 py-2">
+                    <span className="text-gray-400 font-bold">MISS</span>
+                    <span className="text-white">-30 pts</span>
+                  </div>
+                  <div className="flex justify-between bg-black/30 rounded-lg px-3 py-2">
+                    <span className="text-red-500 font-bold">MINE HIT</span>
+                    <span className="text-white">-100 pts</span>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm mt-3">
+                  <strong className="text-white">Combo Bonus:</strong> Keep hitting notes consecutively to build your combo multiplier! Missing a note or hitting a mine resets your combo to zero.
+                </p>
+              </div>
+
+              {/* Timing Windows */}
+              <div className="bg-white/5 rounded-xl p-4">
+                <h3 className="text-xl font-bold text-cyan-400 mb-2">Timing Windows</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between bg-black/30 rounded-lg px-3 py-2">
+                    <span className="text-yellow-400 font-bold">PERFECT</span>
+                    <span className="text-white">Within 90ms</span>
+                  </div>
+                  <div className="flex justify-between bg-black/30 rounded-lg px-3 py-2">
+                    <span className="text-green-400 font-bold">GOOD</span>
+                    <span className="text-white">Within 150ms</span>
+                  </div>
+                  <div className="flex justify-between bg-black/30 rounded-lg px-3 py-2">
+                    <span className="text-gray-400 font-bold">MISS</span>
+                    <span className="text-white">Beyond 200ms</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tips */}
+              <div className="bg-white/5 rounded-xl p-4">
+                <h3 className="text-xl font-bold text-orange-400 mb-2">Tips</h3>
+                <ul className="space-y-1 text-sm text-gray-300">
+                  <li>- Start with slower songs to get used to the timing</li>
+                  <li>- Use Practice Mode in settings to slow down the game</li>
+                  <li>- Watch the approach speed - some notes may be faster than others!</li>
+                  <li>- For hold notes, check the end ball color to know if you need to release</li>
+                  <li>- Yellow end = release precisely, White end = just hold until it ends</li>
+                  <li>- Missing a note breaks your combo - accuracy is key!</li>
+                  <li>- Create your own beatmaps in the Level Editor!</li>
+                </ul>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowHowToPlay(false)}
+              className="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(168,85,247,0.5)] text-white"
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* How to Play Button - Top Left */}
+      <div className="absolute top-4 left-4 z-50 animate-slide-in-left">
+        <button
+          onClick={() => setShowHowToPlay(true)}
+          className="px-4 py-2 bg-purple-600/80 hover:bg-purple-500 rounded-full font-bold text-sm transition-all duration-300 border border-purple-400/50 flex items-center gap-2 hover-lift hover-glow ripple-btn"
+        >
+          <span className="text-lg animate-bounce">?</span>
+          How to Play
+        </button>
+      </div>
+
       {/* User Account Section - Top Right */}
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 animate-slide-in-right">
         {user ? (
-          <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md rounded-full px-4 py-2 border border-white/10">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center font-bold text-sm">
+          <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md rounded-full px-4 py-2 border border-white/10 hover:border-pink-500/50 transition-all duration-300 hover-lift">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center font-bold text-sm animate-pulse-glow">
               {profile?.username?.charAt(0).toUpperCase() || 'U'}
             </div>
             <span className="text-white font-bold">{profile?.username || 'User'}</span>
             <button
               onClick={signOut}
-              className="text-gray-400 hover:text-pink-400 text-sm font-bold transition-colors"
+              className="text-gray-400 hover:text-pink-400 text-sm font-bold transition-all duration-300 hover:scale-105"
             >
               Sign Out
             </button>
@@ -338,13 +539,13 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
           <div className="flex gap-2">
             <button
               onClick={() => { setShowAuthModal(true); setAuthMode('login'); }}
-              className="px-4 py-2 bg-pink-600/80 hover:bg-pink-500 rounded-full font-bold text-sm transition-colors border border-pink-400/50"
+              className="px-4 py-2 bg-pink-600/80 hover:bg-pink-500 rounded-full font-bold text-sm transition-all duration-300 border border-pink-400/50 hover-lift hover-glow ripple-btn"
             >
               Sign In
             </button>
             <button
               onClick={() => { setShowAuthModal(true); setAuthMode('register'); }}
-              className="px-4 py-2 bg-gray-800/80 hover:bg-gray-700 rounded-full font-bold text-sm transition-colors border border-gray-600"
+              className="px-4 py-2 bg-gray-800/80 hover:bg-gray-700 rounded-full font-bold text-sm transition-all duration-300 border border-gray-600 hover-lift ripple-btn"
             >
               Sign Up
             </button>
@@ -364,27 +565,33 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
       )}
 
       {/* Left Side: Big Logo & Menu */}
-      <div className="z-10 flex flex-col items-center justify-center w-1/2 h-full">
+      <div className="z-10 flex flex-col items-center justify-center w-full lg:w-1/2 py-4 lg:py-0">
         {!showSettings ? (
-          <div className="flex flex-col items-center gap-8 relative">
+          <div className="flex flex-col items-center gap-4 md:gap-6 lg:gap-8 relative animate-slide-in-left">
             {/* Osu-like Big Button */}
             <div
-              className={`relative w-80 h-80 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-[0_0_50px_rgba(236,72,153,0.5)] transform transition-transform duration-300 border-4 border-white/20 ${selectedMap ? 'cursor-pointer group-hover:scale-105 group-hover:shadow-[0_0_80px_rgba(236,72,153,0.8)]' : 'opacity-50 cursor-not-allowed'
+              className={`relative w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center transform transition-all duration-500 border-4 border-white/20 group ${selectedMap ? 'cursor-pointer animate-rotate-glow hover:scale-110' : 'opacity-50 cursor-not-allowed'
                 }`}
               onClick={handlePlayClick}
             >
-              <div className="absolute inset-2 rounded-full border-2 border-dashed border-white/30 animate-[spin_10s_linear_infinite]"></div>
-              <h1 className="text-6xl font-black text-white tracking-tighter drop-shadow-lg z-10 italic">
+              {/* Outer spinning ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/30 animate-spin-slow"></div>
+              {/* Inner spinning ring (opposite direction) */}
+              <div className="absolute inset-2 md:inset-3 lg:inset-4 rounded-full border-2 border-dashed border-white/20" style={{ animation: 'spinSlow 15s linear infinite reverse' }}></div>
+              {/* Pulsing inner glow */}
+              <div className="absolute inset-4 md:inset-6 lg:inset-8 rounded-full bg-white/5 animate-pulse"></div>
+              
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tighter drop-shadow-lg z-10 italic animate-text-glow group-hover:scale-110 transition-transform duration-300">
                 RUSHEB
               </h1>
               {selectedMap && (
-                <div className="absolute -bottom-4 bg-gray-900 text-pink-400 font-bold px-6 py-2 rounded-full border-2 border-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                <div className="absolute -bottom-2 md:-bottom-3 lg:-bottom-4 bg-gray-900 text-pink-400 font-bold px-3 md:px-4 lg:px-6 py-1 md:py-2 rounded-full border-2 border-pink-500 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 animate-pulse-glow text-xs md:text-sm lg:text-base">
                   CLICK TO PLAY
                 </div>
               )}
             </div>
 
-            <p className="text-gray-400 italic mt-4">
+            <p className="text-gray-400 italic mt-2 md:mt-4 animate-slide-in-up delay-200 text-center px-4">
               {selectedMap ? (
                 <>Selected: <span className="text-white font-bold">{selectedMap.name}</span></>
               ) : (
@@ -394,7 +601,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
 
             {/* Real-time connection indicator */}
             {isConfigured && !isGuest && (
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-1 md:mt-2">
                 <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`}></div>
                 <span className={`text-xs ${isRealtimeConnected ? 'text-green-400' : 'text-gray-500'}`}>
                   {isRealtimeConnected ? 'Real-time sync active' : 'Connecting...'}
@@ -402,7 +609,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
               </div>
             )}
 
-            <div className="flex gap-4 mt-4">
+            <div className="flex flex-wrap justify-center gap-2 md:gap-3 lg:gap-4 mt-2 md:mt-4 animate-slide-in-up delay-400">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -413,9 +620,9 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                   }
                   onEdit(createBlankMap());
                 }}
-                className={`py-3 px-8 backdrop-blur-sm rounded-full font-bold transition-all border ${isGuest
+                className={`py-2 md:py-3 px-4 md:px-6 lg:px-8 backdrop-blur-sm rounded-full font-bold transition-all duration-300 border ripple-btn text-sm md:text-base ${isGuest
                   ? 'bg-gray-700/50 border-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-green-600/80 hover:bg-green-500 border-green-400 shadow-[0_0_15px_rgba(34,197,94,0.5)]'
+                  : 'bg-green-600/80 hover:bg-green-500 border-green-400 shadow-[0_0_15px_rgba(34,197,94,0.5)] hover:shadow-[0_0_25px_rgba(34,197,94,0.7)] hover:scale-105 hover-lift'
                   }`}
                 title={isGuest ? 'Sign in to create levels' : ''}
               >
@@ -424,10 +631,10 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
               <button
                 onClick={handleEditClick}
                 disabled={!selectedMap || isGuest}
-                className={`py-3 px-8 backdrop-blur-sm rounded-full font-bold transition-all border ${isGuest
+                className={`py-2 md:py-3 px-4 md:px-6 lg:px-8 backdrop-blur-sm rounded-full font-bold transition-all duration-300 border ripple-btn text-sm md:text-base ${isGuest
                   ? 'bg-gray-700/50 border-gray-600 text-gray-400 cursor-not-allowed'
                   : selectedMap
-                    ? 'bg-blue-600/80 hover:bg-blue-500 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]'
+                    ? 'bg-blue-600/80 hover:bg-blue-500 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:shadow-[0_0_25px_rgba(59,130,246,0.7)] hover:scale-105 hover-lift'
                     : 'bg-gray-700/50 border-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 title={isGuest ? 'Sign in to edit levels' : ''}
@@ -436,61 +643,48 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}
-                className="py-3 px-8 bg-gray-800/80 hover:bg-gray-700 backdrop-blur-sm rounded-full font-bold transition-all border border-gray-600"
+                className="py-2 md:py-3 px-4 md:px-6 lg:px-8 bg-gray-800/80 hover:bg-gray-700 backdrop-blur-sm rounded-full font-bold transition-all duration-300 border border-gray-600 hover:border-gray-500 hover:scale-105 ripple-btn hover-lift text-sm md:text-base"
               >
                 SETTINGS
               </button>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-4 w-full max-w-md bg-black/60 backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl overflow-y-auto max-h-[80vh] custom-scrollbar">
-            <h2 className="text-3xl font-black mb-6 text-pink-400 border-b border-white/10 pb-4 flex justify-between">
-              <span>Settings</span>
-              <button onClick={() => setShowSettings(false)} className="text-white hover:text-pink-400">×</button>
+          <div className="flex flex-col gap-3 md:gap-4 w-full max-w-md bg-black/60 backdrop-blur-md p-4 md:p-6 lg:p-8 rounded-3xl border border-white/10 shadow-2xl overflow-y-auto max-h-[80vh] custom-scrollbar animate-fade-in-scale gradient-border mx-4">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-black mb-2 md:mb-4 lg:mb-6 text-pink-400 border-b border-white/10 pb-2 md:pb-4 flex justify-between">
+              <span className="animate-text-glow">Settings</span>
+              <button onClick={() => setShowSettings(false)} className="text-white hover:text-pink-400 transition-all duration-300 hover:scale-110 hover:rotate-90 text-xl md:text-2xl">×</button>
             </h2>
 
-            <label className="flex items-center justify-between cursor-pointer group bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors">
-              <span className="font-bold text-gray-200">Practice Mode (Turtle Speed)</span>
+            <label className="flex items-center justify-between cursor-pointer group bg-white/5 p-3 md:p-4 rounded-xl hover:bg-white/10 transition-all duration-300 border border-transparent hover:border-pink-500/30 hover-lift">
+              <span className="font-bold text-gray-200 text-sm md:text-base">Practice Mode (Turtle Speed)</span>
               <input
                 type="checkbox"
                 checked={settings.practiceMode}
                 onChange={(e) => updateSetting('practiceMode', e.target.checked)}
-                className="w-6 h-6 accent-pink-500"
+                className="w-6 h-6 accent-pink-500 cursor-pointer"
               />
             </label>
 
-            <label className="flex items-center justify-between cursor-pointer group bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors">
-              <span className="font-bold text-gray-200">Invisible Mode (Trust your soul)</span>
-              <input
-                type="checkbox"
-                checked={settings.invisibleMode}
-                onChange={(e) => updateSetting('invisibleMode', e.target.checked)}
-                className="w-6 h-6 accent-pink-500"
-              />
-            </label>
-
-            <label className="flex items-center justify-between cursor-pointer group bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors">
+            <label className="flex items-center justify-between cursor-pointer group bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-all duration-300 border border-transparent hover:border-pink-500/30 hover-lift">
               <span className="font-bold text-gray-200">Crazy Keyboard (Visual Flair)</span>
               <input
                 type="checkbox"
                 checked={settings.crazyKeyboardMode}
                 onChange={(e) => updateSetting('crazyKeyboardMode', e.target.checked)}
-                className="w-6 h-6 accent-pink-500"
+                className="w-6 h-6 accent-pink-500 cursor-pointer"
               />
             </label>
 
-            <div className="flex flex-col gap-2 mt-2 bg-white/5 p-4 rounded-xl">
-              <span className="font-bold text-gray-200">Visual Theme</span>
-              <select
-                value={settings.theme}
-                onChange={(e) => updateSetting('theme', e.target.value as Theme)}
-                className="bg-gray-900 text-white p-3 rounded-lg outline-none border border-gray-700 focus:border-pink-500 font-bold cursor-pointer"
-              >
-                <option value={Theme.SPACE}>Outer Space</option>
-                <option value={Theme.CITY}>Neon City</option>
-                <option value={Theme.BREAD_BUTTER}>Bread & Butter (Secret)</option>
-              </select>
-            </div>
+            <label className="flex items-center justify-between cursor-pointer group bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-all duration-300 border border-transparent hover:border-pink-500/30 hover-lift">
+              <span className="font-bold text-gray-200">Stupidly Crazy Effects</span>
+              <input
+                type="checkbox"
+                checked={settings.stupidlyCrazyEffects}
+                onChange={(e) => updateSetting('stupidlyCrazyEffects', e.target.checked)}
+                className="w-6 h-6 accent-pink-500"
+              />
+            </label>
 
             <div className="flex flex-col gap-2 mt-2 bg-white/5 p-4 rounded-xl">
               <span className="font-bold text-gray-200">Key Mode</span>
@@ -527,7 +721,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
               </div>
             )}
 
-            <div className="flex flex-col gap-4 mt-2 bg-white/5 p-4 rounded-xl">
+            <div className="flex flex-col gap-4 mt-2 bg-white/5 p-4 rounded-xl border border-transparent hover:border-white/10 transition-all duration-300">
               <span className="font-bold text-gray-200 border-b border-gray-700 pb-2">Audio Volumes</span>
 
               <label className="flex flex-col gap-2 group">
@@ -572,7 +766,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
 
             {/* Account Settings - Only for logged in users */}
             {user && (
-              <div className="flex flex-col gap-2 mt-2 bg-white/5 p-4 rounded-xl">
+              <div className="flex flex-col gap-2 mt-2 bg-white/5 p-4 rounded-xl border border-transparent hover:border-white/10 transition-all duration-300">
                 <span className="font-bold text-gray-200 border-b border-gray-700 pb-2">Account</span>
                 <div className="flex gap-2 items-center">
                   <input
@@ -580,31 +774,31 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                     placeholder="New username"
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
-                    className="flex-1 bg-gray-900 text-white p-3 rounded-lg outline-none border border-gray-700 focus:border-pink-500 font-bold"
+                    className="flex-1 bg-gray-900 text-white p-3 rounded-lg outline-none border border-gray-700 focus:border-pink-500 font-bold transition-all duration-300 focus:ring-2 focus:ring-pink-500/30"
                   />
                   <button
                     onClick={handleChangeUsername}
                     disabled={!newUsername.trim() || newUsername === profile?.username}
-                    className={`px-4 py-3 rounded-lg font-bold transition-all ${!newUsername.trim() || newUsername === profile?.username
+                    className={`px-4 py-3 rounded-lg font-bold transition-all duration-300 ripple-btn ${!newUsername.trim() || newUsername === profile?.username
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      : 'bg-pink-600 hover:bg-pink-500 text-white'
+                      : 'bg-pink-600 hover:bg-pink-500 text-white hover:scale-105 hover-glow'
                       }`}
                   >
                     Update
                   </button>
                 </div>
                 {usernameError && (
-                  <p className="text-red-400 text-sm">{usernameError}</p>
+                  <p className="text-red-400 text-sm animate-shake">{usernameError}</p>
                 )}
                 {usernameSuccess && (
-                  <p className="text-green-400 text-sm">{usernameSuccess}</p>
+                  <p className="text-green-400 text-sm animate-slide-in-up">{usernameSuccess}</p>
                 )}
               </div>
             )}
 
             <button
               onClick={() => setShowSettings(false)}
-              className="mt-4 py-4 px-4 bg-gray-700 hover:bg-gray-600 rounded-xl font-black transition-all border border-gray-500 text-lg"
+              className="mt-4 py-4 px-4 bg-gray-700 hover:bg-gray-600 rounded-xl font-black transition-all duration-300 border border-gray-500 text-lg hover:scale-[1.02] ripple-btn hover-lift"
             >
               BACK TO MENU
             </button>
@@ -613,17 +807,17 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
       </div>
 
       {/* Right Side: Song List */}
-      <div className="z-10 flex flex-col w-1/2 max-w-lg h-full justify-center">
-        <div className="bg-black/40 backdrop-blur-md rounded-3xl border border-white/10 p-6 flex flex-col h-[80vh] shadow-2xl">
+      <div className="z-10 flex flex-col w-full lg:w-1/2 max-w-lg py-4 lg:py-0 animate-slide-in-right">
+        <div className="bg-black/40 backdrop-blur-md rounded-3xl border border-white/10 p-4 md:p-6 flex flex-col h-[50vh] md:h-[60vh] lg:h-[80vh] shadow-2xl gradient-border animate-fade-in mx-4 lg:mx-0">
           {/* Tab Buttons */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-3 md:mb-4">
             <button
               onClick={() => {
                 setActiveTab('your_beatmaps');
                 loadMapsFull();
               }}
-              className={`flex-1 py-2 px-4 rounded-xl font-bold transition-all ${activeTab === 'your_beatmaps'
-                ? 'bg-pink-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)]'
+              className={`flex-1 py-1.5 md:py-2 px-2 md:px-4 rounded-xl font-bold transition-all duration-300 ripple-btn text-sm md:text-base ${activeTab === 'your_beatmaps'
+                ? 'bg-pink-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)] animate-pulse-glow'
                 : 'bg-gray-800/80 text-gray-400 hover:bg-gray-700/80'
                 }`}
             >
@@ -634,8 +828,8 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                 setActiveTab('public_beatmaps');
                 loadPublicBeatmaps();
               }}
-              className={`flex-1 py-2 px-4 rounded-xl font-bold transition-all ${activeTab === 'public_beatmaps'
-                ? 'bg-pink-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)]'
+              className={`flex-1 py-1.5 md:py-2 px-2 md:px-4 rounded-xl font-bold transition-all duration-300 ripple-btn text-sm md:text-base ${activeTab === 'public_beatmaps'
+                ? 'bg-pink-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)] animate-pulse-glow'
                 : 'bg-gray-800/80 text-gray-400 hover:bg-gray-700/80'
                 }`}
             >
@@ -645,31 +839,32 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
 
           {activeTab === 'your_beatmaps' && (
             <>
-              <div className="flex justify-between items-end mb-4 border-b border-white/10 pb-4">
-                <h2 className="text-xl font-black text-white italic tracking-wider">YOUR BEATMAPS</h2>
+              <div className="flex justify-between items-end mb-2 md:mb-4 border-b border-white/10 pb-2 md:pb-4">
+                <h2 className="text-base md:text-xl font-black text-white italic tracking-wider animate-text-glow">YOUR BEATMAPS</h2>
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto pr-2 space-y-2 md:space-y-3 custom-scrollbar">
                 {savedMaps.length === 0 ? (
-                  <div className="text-center text-gray-400 py-8">
-                    <p className="text-lg mb-2">No beatmaps yet!</p>
-                    <p className="text-sm">Create a new level or import one to get started.</p>
+                  <div className="text-center text-gray-400 py-4 md:py-8 animate-fade-in">
+                    <p className="text-sm md:text-lg mb-1 md:mb-2">No beatmaps yet!</p>
+                    <p className="text-xs md:text-sm">Create a new level or import one to get started.</p>
                   </div>
                 ) : (
-                  savedMaps.map((map) => {
+                  savedMaps.map((map, index) => {
                     const isSelected = map.id === selectedMapId;
                     return (
                       <div
                         key={map.id}
                         onClick={() => setSelectedMapId(map.id)}
-                        className={`relative p-4 cursor-pointer transition-all transform skew-x-[-5deg] border-l-8 ${isSelected ? 'bg-gradient-to-r from-pink-900/80 to-purple-900/40 border-pink-500 scale-105 ml-4 shadow-lg' : 'bg-gray-800/80 border-gray-600 hover:bg-gray-700/80'}`}
+                        className={`relative p-2 md:p-4 cursor-pointer transition-all duration-300 transform skew-x-[-5deg] border-l-8 card-shine ${isSelected ? 'bg-gradient-to-r from-pink-900/80 to-purple-900/40 border-pink-500 scale-105 ml-2 md:ml-4 shadow-lg animate-pulse-glow' : 'bg-gray-800/80 border-gray-600 hover:bg-gray-700/80 hover:scale-102'}`}
+                        style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <div className="transform skew-x-[5deg] flex justify-between items-center">
-                          <div>
-                            <h3 className={`font-black text-lg truncate w-64 ${isSelected ? 'text-white' : 'text-gray-300'}`}>{map.name}</h3>
-                            <p className="text-sm text-gray-400">{map.artist} • {(map.duration / 1000).toFixed(1)}s</p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className={`font-black text-sm md:text-lg truncate transition-all duration-300 ${isSelected ? 'text-white' : 'text-gray-300'}`}>{map.name}</h3>
+                            <p className="text-xs md:text-sm text-gray-400">{map.artist} • {(map.duration / 1000).toFixed(1)}s</p>
                             {map.difficulty && (
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded mt-1 inline-block ${map.difficulty <= 3 ? 'bg-green-500/20 text-green-400' :
+                              <span className={`text-xs font-bold px-1.5 md:px-2 py-0.5 rounded mt-0.5 md:mt-1 inline-block transition-all duration-300 ${map.difficulty <= 3 ? 'bg-green-500/20 text-green-400' :
                                 map.difficulty <= 6 ? 'bg-yellow-500/20 text-yellow-400' :
                                   map.difficulty <= 8 ? 'bg-orange-500/20 text-orange-400' :
                                     'bg-red-500/20 text-red-400'
@@ -682,7 +877,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                           </div>
                           <button
                             onClick={(e) => handleDeleteMap(e, map.id)}
-                            className="text-gray-500 hover:text-red-500 p-2 transition-colors"
+                            className="text-gray-500 hover:text-red-500 p-1 md:p-2 transition-all duration-300 hover:scale-125 hover:rotate-12"
                             title="Delete Map"
                           >
                             🗑️
@@ -694,7 +889,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                 )}
               </div>
 
-              <div className="mt-4 text-center text-gray-500 text-sm italic border-t border-white/10 pt-4">
+              <div className="mt-2 md:mt-4 text-center text-gray-500 text-xs md:text-sm italic border-t border-white/10 pt-2 md:pt-4 animate-slide-in-up">
                 Beatmaps are safely stored in your browser's database.
               </div>
             </>
@@ -702,44 +897,45 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
 
           {activeTab === 'public_beatmaps' && (
             <>
-              <div className="flex justify-between items-end mb-4 border-b border-white/10 pb-4">
-                <h2 className="text-xl font-black text-white italic tracking-wider">PUBLIC BEATMAPS</h2>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2 md:gap-0 mb-2 md:mb-4 border-b border-white/10 pb-2 md:pb-4">
+                <h2 className="text-base md:text-xl font-black text-white italic tracking-wider animate-text-glow">PUBLIC BEATMAPS</h2>
                 {isConfigured && (
                   <input
                     type="text"
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-sm focus:border-pink-500 focus:outline-none"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-2 md:px-3 py-1 text-xs md:text-sm focus:border-pink-500 focus:outline-none transition-all duration-300 focus:ring-2 focus:ring-pink-500/30 w-full md:w-auto"
                   />
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto pr-2 space-y-2 md:space-y-3 custom-scrollbar">
                 {!isConfigured ? (
-                  <div className="text-center text-gray-400 py-8">
-                    <p className="text-lg mb-2">Supabase Not Configured</p>
-                    <p className="text-sm">Add your Supabase credentials to .env.local to enable public beatmaps.</p>
+                  <div className="text-center text-gray-400 py-4 md:py-8 animate-fade-in">
+                    <p className="text-sm md:text-lg mb-1 md:mb-2">Supabase Not Configured</p>
+                    <p className="text-xs md:text-sm">Add your Supabase credentials to .env.local to enable public beatmaps.</p>
                   </div>
                 ) : publicBeatmaps.length === 0 ? (
-                  <div className="text-center text-gray-400 py-8">
-                    <p className="text-lg mb-2">No public beatmaps found</p>
-                    <p className="text-sm">Be the first to publish a beatmap!</p>
+                  <div className="text-center text-gray-400 py-4 md:py-8 animate-fade-in">
+                    <p className="text-sm md:text-lg mb-1 md:mb-2">No public beatmaps found</p>
+                    <p className="text-xs md:text-sm">Be the first to publish a beatmap!</p>
                   </div>
                 ) : (
-                  publicBeatmaps.map((map) => (
+                  publicBeatmaps.map((map, index) => (
                     <div
                       key={map.id}
-                      className="relative p-4 bg-gray-800/80 border-l-8 border-purple-500 hover:bg-gray-700/80 transition-all group"
+                      className="relative p-2 md:p-4 bg-gray-800/80 border-l-8 border-purple-500 hover:bg-gray-700/80 transition-all duration-300 group card-shine hover-lift"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-black text-lg text-white">{map.name}</h3>
-                          <p className="text-sm text-gray-400">{map.artist} • {(map.duration / 1000).toFixed(1)}s</p>
-                          <p className="text-xs text-gray-500 mt-1">by {map.user?.username || 'Unknown'}</p>
-                          <div className="flex gap-2 mt-2 items-center">
+                      <div className="flex flex-col md:flex-row justify-between items-start gap-2 md:gap-0">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-black text-sm md:text-lg text-white group-hover:text-pink-400 transition-colors duration-300 truncate">{map.name}</h3>
+                          <p className="text-xs md:text-sm text-gray-400">{map.artist} • {(map.duration / 1000).toFixed(1)}s</p>
+                          <p className="text-xs text-gray-500 mt-0.5 md:mt-1">by {map.user?.username || 'Unknown'}</p>
+                          <div className="flex flex-wrap gap-1 md:gap-2 mt-1 md:mt-2 items-center">
                             {map.difficulty && (
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded ${map.difficulty <= 3 ? 'bg-green-500/20 text-green-400' :
+                              <span className={`text-xs font-bold px-1.5 md:px-2 py-0.5 rounded transition-all duration-300 ${map.difficulty <= 3 ? 'bg-green-500/20 text-green-400' :
                                 map.difficulty <= 6 ? 'bg-yellow-500/20 text-yellow-400' :
                                   map.difficulty <= 8 ? 'bg-orange-500/20 text-orange-400' :
                                     'bg-red-500/20 text-red-400'
@@ -757,7 +953,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                                     setOpenRatingMapId(openRatingMapId === map.id ? null : map.id);
                                   }
                                 }}
-                                className={`flex items-center gap-1 ${isGuest ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:underline'}`}
+                                className={`flex items-center gap-1 transition-all duration-300 ${isGuest ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:underline hover:scale-105'}`}
                                 title={isGuest ? 'Sign in to rate' : 'Click to rate'}
                               >
                                 ⭐ {map.rating?.toFixed(1) || '0.0'} ({map.rating_count || 0})
@@ -765,7 +961,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
 
                               {/* Rating Popup on Click */}
                               {!isGuest && openRatingMapId === map.id && (
-                                <div className="absolute bottom-full left-0 mb-2 flex bg-gray-900 border border-gray-700 rounded-lg p-2 gap-1 shadow-xl z-50">
+                                <div className="absolute bottom-full left-0 mb-2 flex bg-gray-900 border border-gray-700 rounded-lg p-2 gap-1 shadow-xl z-50 animate-bounce-in">
                                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(star => (
                                     <button
                                       key={star}
@@ -780,7 +976,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                                           loadPublicBeatmaps();
                                         }
                                       }}
-                                      className="w-6 h-6 flex items-center justify-center hover:scale-125 transition-transform text-gray-500 hover:text-yellow-400 font-bold text-xs"
+                                      className="w-5 md:w-6 h-5 md:h-6 flex items-center justify-center hover:scale-125 transition-transform duration-200 text-gray-500 hover:text-yellow-400 font-bold text-xs"
                                       title={`Rate ${star} stars`}
                                     >
                                       {star}
@@ -791,7 +987,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                             </span>
                           </div>
                         </div>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex md:flex-col gap-1 md:gap-2 self-end md:self-start">
                           <button
                             onClick={async () => {
                               // Fetch full beatmap data including notes and audio
@@ -812,14 +1008,14 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                                 toastError('Failed to load beatmap');
                               }
                             }}
-                            className="px-3 py-1 bg-pink-600 hover:bg-pink-500 rounded-lg text-sm font-bold transition-colors"
+                            className="px-2 md:px-3 py-0.5 md:py-1 bg-pink-600 hover:bg-pink-500 rounded-lg text-xs md:text-sm font-bold transition-all duration-300 hover:scale-105 hover-glow ripple-btn"
                           >
                             Play
                           </button>
                           {!isGuest && (
                             <button
                               onClick={() => downloadBeatmap(map)}
-                              className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold transition-colors"
+                              className="px-2 md:px-3 py-0.5 md:py-1 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs md:text-sm font-bold transition-all duration-300 hover:scale-105 ripple-btn"
                             >
                               Download
                             </button>
@@ -831,7 +1027,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                 )}
               </div>
 
-              <div className="mt-4 text-center text-gray-500 text-sm italic border-t border-white/10 pt-4">
+              <div className="mt-2 md:mt-4 text-center text-gray-500 text-xs md:text-sm italic border-t border-white/10 pt-2 md:pt-4 animate-slide-in-up">
                 {isGuest ? 'Sign in to download and rate beatmaps.' : 'Click Play to play online or Download to save locally.'}
               </div>
             </>

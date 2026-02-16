@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Beatmap, GameSettings, Theme, ScoreDetails } from './types';
+import { GameState, Beatmap, GameSettings, ScoreDetails } from './types';
 import { DEFAULT_SETTINGS, createBlankMap } from './constants';
 import MainMenu from './components/MainMenu';
 import GameCanvas from './components/GameCanvas';
@@ -67,41 +67,49 @@ const App: React.FC = () => {
   return (
     <ToastProvider>
       <AuthProvider>
-        <div className="w-full h-screen overflow-hidden flex flex-col bg-gray-900 text-white selection:bg-pink-500">
+        <div className="w-full h-screen overflow-hidden flex flex-col bg-gray-900 text-white selection:bg-pink-500 selection:text-white">
           {gameState === GameState.MENU && (
-            <MainMenu
-              key={menuRefreshKey}
-              onStart={handleStartGame}
-              onEdit={handleOpenEditor}
-              settings={settings}
-              onSettingsChange={setSettings}
-            />
+            <div key="menu" className="animate-fade-in">
+              <MainMenu
+                key={menuRefreshKey}
+                onStart={handleStartGame}
+                onEdit={handleOpenEditor}
+                settings={settings}
+                onSettingsChange={setSettings}
+              />
+            </div>
           )}
 
           {gameState === GameState.PLAYING && currentMap && (
-            <GameCanvas
-              beatmap={currentMap}
-              settings={settings}
-              onEnd={handleGameEnd}
-              onAbort={handleReturnToMenu}
-            />
+            <div key="playing" className="animate-fade-in">
+              <GameCanvas
+                beatmap={currentMap}
+                settings={settings}
+                onEnd={handleGameEnd}
+                onAbort={handleReturnToMenu}
+              />
+            </div>
           )}
 
           {gameState === GameState.EDITOR && currentMap && (
-            <LevelEditor
-              initialMap={currentMap}
-              settings={settings}
-              onExit={handleReturnToMenu}
-              onPlaytest={handleStartGame}
-            />
+            <div key="editor" className="animate-fade-in">
+              <LevelEditor
+                initialMap={currentMap}
+                settings={settings}
+                onExit={handleReturnToMenu}
+                onPlaytest={handleStartGame}
+              />
+            </div>
           )}
 
           {gameState === GameState.RESULTS && lastScore && (
-            <ResultsScreen
-              score={lastScore}
-              onRetry={() => setGameState(GameState.PLAYING)}
-              onMenu={handleReturnToMenu}
-            />
+            <div key="results" className="animate-fade-in">
+              <ResultsScreen
+                score={lastScore}
+                onRetry={() => setGameState(GameState.PLAYING)}
+                onMenu={handleReturnToMenu}
+              />
+            </div>
           )}
         </div>
       </AuthProvider>

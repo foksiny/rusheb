@@ -81,12 +81,6 @@ export enum GameState {
   RESULTS = 'RESULTS'
 }
 
-export enum Theme {
-  SPACE = 'SPACE',
-  CITY = 'CITY',
-  BREAD_BUTTER = 'BREAD_BUTTER' // Secret Theme: Bread with Butter
-}
-
 export enum KeyMode {
   ALL_KEYS = 'ALL_KEYS',
   FOUR_KEYS = 'FOUR_KEYS'
@@ -94,10 +88,9 @@ export enum KeyMode {
 
 export interface GameSettings {
   scrollSpeed: number; // Multiplier
-  practiceMode: boolean; // Slows down time
-  invisibleMode: boolean; // Notes fade out before hitting
-  crazyKeyboardMode: boolean; // Visual flair
-  theme: Theme;
+  practiceMode: boolean; // Slows down time and disables speed effects
+  crazyKeyboardMode: boolean; // Visual flair - shows pressed keys falling
+  stupidlyCrazyEffects: boolean; // Extra visual effects for everything
   masterVolume: number; // 0.0 to 1.0
   sfxVolume: number; // 0.0 to 1.0
   musicVolume: number; // 0.0 to 1.0

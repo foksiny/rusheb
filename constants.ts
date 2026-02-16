@@ -1,4 +1,4 @@
-import { Beatmap, NoteType, Theme, KeyMode } from './types';
+import { Beatmap, NoteType, KeyMode } from './types';
 
 export const HIT_WINDOWS = {
   PERFECT: 90,
@@ -18,9 +18,8 @@ export const DEFAULT_KEY_BINDINGS = ['A', 'S', 'K', 'L'];
 export const DEFAULT_SETTINGS = {
   scrollSpeed: 1,
   practiceMode: false,
-  invisibleMode: false,
   crazyKeyboardMode: false,
-  theme: Theme.SPACE,
+  stupidlyCrazyEffects: false,
   masterVolume: 1.0,
   sfxVolume: 0.8,
   musicVolume: 0.8,
