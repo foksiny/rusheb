@@ -62,7 +62,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onSwitchMo
 
   if (!isConfigured) {
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4 overflow-y-auto">
         <div className="bg-gray-900 rounded-2xl p-4 md:p-8 max-w-md w-full border border-white/10 animate-bounce-in gradient-border shadow-2xl">
           <h2 className="text-xl md:text-2xl font-black text-pink-400 mb-3 md:mb-4 animate-text-glow">Supabase Not Configured</h2>
           <p className="text-gray-300 mb-3 md:mb-4 text-sm md:text-base">
@@ -86,7 +86,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onSwitchMo
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4 overflow-y-auto">
       <div className="bg-gray-900 rounded-2xl p-4 md:p-8 max-w-md w-full border border-white/10 animate-bounce-in gradient-border shadow-2xl">
         <div className="flex justify-between items-center mb-4 md:mb-6">
           <h2 className="text-xl md:text-2xl font-black text-pink-400 animate-text-glow">

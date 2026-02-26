@@ -69,7 +69,7 @@ const App: React.FC = () => {
       <AuthProvider>
         <div className="w-full h-screen overflow-hidden flex flex-col bg-gray-900 text-white selection:bg-pink-500 selection:text-white">
           {gameState === GameState.MENU && (
-            <div key="menu" className="animate-fade-in">
+            <div key="menu" className="animate-fade-in h-full">
               <MainMenu
                 key={menuRefreshKey}
                 onStart={handleStartGame}
@@ -81,7 +81,7 @@ const App: React.FC = () => {
           )}
 
           {gameState === GameState.PLAYING && currentMap && (
-            <div key="playing" className="animate-fade-in">
+            <div key="playing" className="animate-fade-in h-full">
               <GameCanvas
                 beatmap={currentMap}
                 settings={settings}
@@ -92,7 +92,7 @@ const App: React.FC = () => {
           )}
 
           {gameState === GameState.EDITOR && currentMap && (
-            <div key="editor" className="animate-fade-in">
+            <div key="editor" className="animate-fade-in h-full">
               <LevelEditor
                 initialMap={currentMap}
                 settings={settings}
@@ -103,7 +103,7 @@ const App: React.FC = () => {
           )}
 
           {gameState === GameState.RESULTS && lastScore && (
-            <div key="results" className="animate-fade-in">
+            <div key="results" className="animate-fade-in h-full">
               <ResultsScreen
                 score={lastScore}
                 onRetry={() => setGameState(GameState.PLAYING)}

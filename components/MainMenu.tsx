@@ -16,19 +16,19 @@ interface MainMenuProps {
 type TabType = 'your_beatmaps' | 'public_beatmaps';
 
 const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettingsChange }) => {
-  const { 
-    user, 
-    profile, 
-    isGuest, 
-    signOut, 
-    updateUsername, 
-    getAllUserBeatmaps, 
-    getPublicBeatmaps, 
-    getPublicBeatmap, 
-    downloadBeatmap, 
-    rateBeatmap, 
-    isConfigured, 
-    uploadBeatmap, 
+  const {
+    user,
+    profile,
+    isGuest,
+    signOut,
+    updateUsername,
+    getAllUserBeatmaps,
+    getPublicBeatmaps,
+    getPublicBeatmap,
+    downloadBeatmap,
+    rateBeatmap,
+    isConfigured,
+    uploadBeatmap,
     deleteBeatmap,
     subscribeToRealtime,
     isRealtimeConnected
@@ -94,10 +94,10 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
   // Real-time subscription handlers
   const handleBeatmapInsert = useCallback((beatmap: PublicBeatmap) => {
     console.log('[Realtime] Beatmap inserted:', beatmap.id);
-    
+
     // Check if this is user's beatmap or public beatmap
     const isUserBeatmap = user && beatmap.user_id === user.id;
-    
+
     if (isUserBeatmap) {
       // Add to user's beatmaps list
       setSavedMaps(prev => {
@@ -106,7 +106,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
         return [publicToBeatmap(beatmap), ...prev];
       });
     }
-    
+
     // Also add to public beatmaps if public
     if (beatmap.is_public) {
       setPublicBeatmaps(prev => {
@@ -119,19 +119,19 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
 
   const handleBeatmapUpdate = useCallback((beatmap: PublicBeatmap) => {
     console.log('[Realtime] Beatmap updated:', beatmap.id);
-    
+
     const isUserBeatmap = user && beatmap.user_id === user.id;
-    
+
     if (isUserBeatmap) {
       // Update in user's beatmaps list
-      setSavedMaps(prev => prev.map(m => 
+      setSavedMaps(prev => prev.map(m =>
         m.id === beatmap.id ? publicToBeatmap(beatmap) : m
       ));
     }
-    
+
     // Update in public beatmaps list
     if (beatmap.is_public) {
-      setPublicBeatmaps(prev => prev.map(m => 
+      setPublicBeatmaps(prev => prev.map(m =>
         m.id === beatmap.id ? beatmap : m
       ));
     }
@@ -139,7 +139,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
 
   const handleBeatmapDelete = useCallback((beatmapId: string) => {
     console.log('[Realtime] Beatmap deleted:', beatmapId);
-    
+
     // Remove from user's beatmaps
     setSavedMaps(prev => {
       const filtered = prev.filter(m => m.id !== beatmapId);
@@ -151,7 +151,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
       }
       return filtered;
     });
-    
+
     // Remove from public beatmaps
     setPublicBeatmaps(prev => prev.filter(m => m.id !== beatmapId));
   }, [selectedMapId]);
@@ -163,10 +163,10 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
 
   const handleRatingChange = useCallback((beatmapId: string, rating: number, ratingCount: number) => {
     console.log('[Realtime] Rating changed for:', beatmapId, rating, ratingCount);
-    
+
     // Update rating in public beatmaps list
-    setPublicBeatmaps(prev => prev.map(m => 
-      m.id === beatmapId 
+    setPublicBeatmaps(prev => prev.map(m =>
+      m.id === beatmapId
         ? { ...m, rating, rating_count: ratingCount }
         : m
     ));
@@ -307,12 +307,12 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
   };
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row items-center justify-center lg:justify-between relative overflow-hidden bg-gradient-to-br from-gray-900 via-indigo-950 to-black p-4 md:p-6 lg:p-10 min-h-screen">
+    <div className="flex-1 flex flex-col lg:flex-row items-center justify-center lg:justify-between relative overflow-auto bg-gradient-to-br from-gray-900 via-indigo-950 to-black p-4 md:p-6 lg:p-10 h-full">
       {/* Animated decorative background elements */}
       <div className="absolute top-[-20%] left-[-10%] w-[400px] md:w-[600px] lg:w-[800px] h-[400px] md:h-[600px] lg:h-[800px] bg-pink-600 rounded-full mix-blend-screen filter blur-[100px] md:blur-[120px] lg:blur-[150px] opacity-20 animate-float"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[400px] md:w-[600px] lg:w-[800px] h-[400px] md:h-[600px] lg:h-[800px] bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] md:blur-[120px] lg:blur-[150px] opacity-20 animate-float" style={{ animationDelay: '2s' }}></div>
       <div className="absolute top-[30%] right-[20%] w-[200px] md:w-[300px] lg:w-[400px] h-[200px] md:h-[300px] lg:h-[400px] bg-purple-600 rounded-full mix-blend-screen filter blur-[80px] md:blur-[100px] lg:blur-[120px] opacity-15 animate-float" style={{ animationDelay: '4s' }}></div>
-      
+
       {/* Floating particles */}
       {[...Array(12)].map((_, i) => (
         <div
@@ -346,8 +346,8 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
               <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 animate-text-glow">
                 How to Play
               </h2>
-              <button 
-                onClick={() => setShowHowToPlay(false)} 
+              <button
+                onClick={() => setShowHowToPlay(false)}
                 className="text-white hover:text-pink-400 text-3xl font-bold transition-all duration-300 hover:scale-110 hover:rotate-90"
               >
                 ×
@@ -359,7 +359,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
               <div className="bg-white/5 rounded-xl p-4">
                 <h3 className="text-xl font-bold text-pink-400 mb-2">Objective</h3>
                 <p className="text-gray-300">
-                  Hit the falling notes at the right time as they reach the bottom of the screen. 
+                  Hit the falling notes at the right time as they reach the bottom of the screen.
                   The goal is to achieve the highest score possible by hitting notes accurately and building combos!
                 </p>
               </div>
@@ -580,7 +580,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
               <div className="absolute inset-2 md:inset-3 lg:inset-4 rounded-full border-2 border-dashed border-white/20" style={{ animation: 'spinSlow 15s linear infinite reverse' }}></div>
               {/* Pulsing inner glow */}
               <div className="absolute inset-4 md:inset-6 lg:inset-8 rounded-full bg-white/5 animate-pulse"></div>
-              
+
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tighter drop-shadow-lg z-10 italic animate-text-glow group-hover:scale-110 transition-transform duration-300">
                 RUSHEB
               </h1>
@@ -946,7 +946,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
                               </span>
                             )}
                             <span className="text-xs text-yellow-400 flex items-center gap-1 relative">
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (!isGuest) {

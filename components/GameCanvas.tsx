@@ -99,6 +99,8 @@ const getLaneWidth = (canvasWidth: number, canvasHeight: number) => {
 
 const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbort }) => {
   const [isPaused, setIsPaused] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [showControls, setShowControls] = useState(true);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -286,12 +288,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
         state.lastFrameTime = performance.now();
 
         if (audioRef.current && state.audioStarted) {
+          audioRef.current.playbackRate = playbackSpeed;
           audioRef.current.play().catch(console.error);
         }
       }
       return next;
     });
-  }, []);
+  }, [playbackSpeed]);
 
   const initStars = (width: number, height: number) => {
     const stars: Star[] = [];
@@ -379,10 +382,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
     let candidates: ActiveNote[] = [];
     for (const note of state.notes) {
       if (note.hitState !== 'NONE') continue;
-      
+
       // In FOUR_KEYS mode, only consider notes in the target lane
       if (keyMode === KeyMode.FOUR_KEYS && targetLane !== undefined && note.lane !== targetLane) continue;
-      
+
       const diff = note.time - state.currentTime;
       // Too far future
       if (diff > HIT_WINDOWS.MISS) break;
@@ -607,7 +610,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
 
     const START_DELAY_MS = 2000;
     const elapsed = timestamp - state.startTime;
-    const speedMult = settings.practiceMode ? 0.5 : 1.0;
+    const speedMult = (settings.practiceMode ? 0.5 : 1.0) * playbackSpeed;
 
     if (elapsed >= START_DELAY_MS && !state.audioStarted) {
       state.audioStarted = true;
@@ -659,7 +662,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
       if (note && note.hitState === 'HOLDING') {
         const endTime = note.time + (note.holdDuration || 0);
         const isReleaseRequired = note.requireRelease !== false;
-        
+
         if (state.currentTime >= endTime) {
           // Hold duration has ended
           if (!isReleaseRequired) {
@@ -681,7 +684,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
           // If release is required and user is still holding, wait for them to release
           // The miss will be triggered when they release too late (checked below)
         }
-        
+
         // Check if user held too long past the end time (miss condition for requireRelease)
         if (isReleaseRequired && state.pressedInputs.size > 0 && state.currentTime > endTime + HIT_WINDOWS.GOOD) {
           // User is still holding past the release window - give a MISS
@@ -846,7 +849,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
             ctx.save();
             ctx.shadowBlur = settings.stupidlyCrazyEffects ? 40 : 20;
             ctx.shadowColor = '#a855f7';
-            
+
             if (settings.stupidlyCrazyEffects) {
               // Rainbow beam effect
               const hue = (timestamp / 10) % 360;
@@ -855,7 +858,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
               ctx.fillStyle = '#fff';
             }
             ctx.fillRect(x - 5, hitLineY - tailDrawHeight, 10, tailDrawHeight);
-            
+
             // Add sparkle particles for hold
             if (settings.stupidlyCrazyEffects && Math.random() > 0.7) {
               addParticles(x, hitLineY - Math.random() * tailDrawHeight, '#a855f7', 2, 0.5);
@@ -931,7 +934,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
           // Visual feedback for missing the note entirely
           const x = getLaneX(width, height, note.lane);
           addFloatingText(x, hitLineY, 'MISS', '#9ca3af');
-          
+
           // Enhanced miss effects for stupidly crazy effects
           if (settings.stupidlyCrazyEffects) {
             addParticles(x, hitLineY, '#9ca3af', 40, 3);
@@ -1065,7 +1068,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
       fk.y += 5;
       fk.opacity -= 0.008;
       fk.rotation += (Math.random() - 0.5) * 2;
-      
+
       if (fk.opacity <= 0 || fk.y > height + 100) {
         state.fallingKeys.splice(i, 1);
       } else {
@@ -1074,7 +1077,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
         ctx.rotate((fk.rotation * Math.PI) / 180);
         ctx.scale(fk.scale, fk.scale);
         ctx.globalAlpha = fk.opacity;
-        
+
         // Key background
         ctx.shadowBlur = 20;
         ctx.shadowColor = fk.color;
@@ -1082,19 +1085,19 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
         ctx.beginPath();
         ctx.roundRect(-25, -25, 50, 50, 8);
         ctx.fill();
-        
+
         // Key border
         ctx.strokeStyle = fk.color;
         ctx.lineWidth = 3;
         ctx.stroke();
-        
+
         // Key text
         ctx.fillStyle = fk.color;
         ctx.font = "900 24px 'Arial Black', sans-serif";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(fk.key, 0, 0);
-        
+
         ctx.restore();
       }
     }
@@ -1105,7 +1108,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
       const ripple = state.rippleEffects[i];
       ripple.radius += 15;
       ripple.opacity -= 0.03;
-      
+
       if (ripple.opacity <= 0) {
         state.rippleEffects.splice(i, 1);
       } else {
@@ -1127,13 +1130,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
     if (state.combo > 0) {
       ctx.save();
       ctx.translate(50, height - 50);
-      
+
       // Enhanced combo effects for stupidly crazy effects
       if (settings.stupidlyCrazyEffects) {
         const comboScale = state.combo > 50 ? 1.5 : state.combo > 25 ? 1.3 : state.combo > 10 ? 1.1 : 1;
         const pulse = 1 + Math.sin(timestamp / 50) * 0.15 * comboScale;
         ctx.scale(pulse, pulse);
-        
+
         // Rainbow color for high combos
         if (state.combo > 25) {
           const hue = (timestamp / 5) % 360;
@@ -1141,15 +1144,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
         } else {
           ctx.fillStyle = '#fff';
         }
-        
+
         // Glow effect
         ctx.shadowBlur = 30;
         ctx.shadowColor = state.combo > 50 ? '#facc15' : state.combo > 25 ? '#ec4899' : '#fff';
-        
+
         ctx.font = "900 40px 'Arial Black', sans-serif";
         ctx.textAlign = 'left';
         ctx.fillText(`${state.combo}x`, 0, 0);
-        
+
         // Outline
         ctx.strokeStyle = state.combo > 25 ? '#fff' : '#ec4899';
         ctx.lineWidth = 2;
@@ -1165,7 +1168,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
         ctx.fillText(`${state.combo}x`, 2, 2);
       }
       ctx.restore();
-      
+
       // Combo milestone effects
       if (settings.stupidlyCrazyEffects && (state.combo === 10 || state.combo === 25 || state.combo === 50 || state.combo === 100)) {
         state.rippleEffects.push({ x: width / 2, y: height / 2, radius: 0, opacity: 1, color: '#facc15' });
@@ -1190,21 +1193,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.repeat) return;
-      if (e.key === 'Escape') { togglePause(); return; }
-      
+      if (e.key === 'Escape' || e.code === 'Space') { togglePause(); return; }
+
       // Check if key is allowed based on keyMode
       const keyMode = settings.keyMode || KeyMode.ALL_KEYS;
       const keyBindings = settings.keyBindings || DEFAULT_KEY_BINDINGS;
-      
+
       if (keyMode === KeyMode.FOUR_KEYS) {
         const pressedKey = e.key.toUpperCase();
         if (!keyBindings.includes(pressedKey)) {
           return; // Ignore keys not in the binding list
         }
       }
-      
+
       processHit(undefined, e.key.toUpperCase(), e.code);
-      
+
       // Add falling key for crazy keyboard mode
       if (settings.crazyKeyboardMode) {
         const state = stateRef.current;
@@ -1236,10 +1239,29 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
     return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); if (audioRef.current) audioRef.current.pause(); };
   }, [beatmap, handleRestart, update]);
 
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
   return (
     <div ref={containerRef} className="flex-1 w-full h-full relative bg-black overflow-hidden">
       {beatmap.audioData && <audio ref={audioRef} src={beatmap.audioData} className="hidden" />}
       <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} className="block w-full h-full" />
+
+      {/* Gameplay Controls Overlay */}
+      {!isPaused && showControls && (
+        <div className="absolute bottom-6 right-6 z-40 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 w-64 shadow-2xl">
+          <button
+            onClick={togglePause}
+            className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase text-xs rounded-xl shadow-lg shadow-yellow-500/20 transition-all"
+          >
+            PAUSE [ESC/SPACE]
+          </button>
+        </div>
+      )}
+
       {isPaused && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="bg-gray-900 border-2 border-pink-500 rounded-3xl p-8 flex flex-col items-center gap-6 shadow-[0_0_50px_rgba(236,72,153,0.3)] w-80">

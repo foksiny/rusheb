@@ -14,7 +14,7 @@ interface LevelEditorProps {
 
 const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit, onPlaytest }) => {
   const { user, isGuest, uploadBeatmap, isConfigured } = useAuth();
-  const { error: toastError } = useToast();
+  const { error: toastError, info: toastInfo } = useToast();
   const [map, setMap] = useState<Beatmap>({
     ...initialMap,
     id: initialMap.id || generateUUID(),
@@ -35,7 +35,7 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [audioUrl, setAudioUrl] = useState<string | null>(initialMap.audioData || initialMap.audioUrl || null);
-  
+
   // Track the ORIGINAL audio data to detect changes
   // This is used to determine if audio needs to be re-uploaded
   const originalAudioRef = useRef<string | null>(initialMap.audioData || initialMap.audioUrl || null);
@@ -188,6 +188,40 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
             }
           }
           return prev;
+        });
+      }
+
+      // Shift + Left/Right to adjust BPM
+      if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        const bpmChange = e.key === 'ArrowLeft' ? -1 : 1;
+        setMap(prev => {
+          const newBpm = Math.max(1, prev.bpm + bpmChange);
+          return { ...prev, bpm: newBpm };
+        });
+        // Calculate new BPM from current state for notification
+        const currentBpm = map.bpm;
+        const newBpm = Math.max(1, currentBpm + bpmChange);
+        showPlaybackNotification(newBpm);
+      }
+
+      // Shift + -/+ to adjust playback speed
+      if (e.shiftKey && (e.key === '-' || e.key === '_')) {
+        e.preventDefault();
+        setPlaybackSpeed(prev => {
+          const newSpeed = Math.max(0.01, prev - 0.01);
+          const roundedSpeed = Math.round(newSpeed * 100) / 100;
+          showPlaybackNotification(undefined, roundedSpeed);
+          return roundedSpeed;
+        });
+      }
+      if (e.shiftKey && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        setPlaybackSpeed(prev => {
+          const newSpeed = prev + 0.01;
+          const roundedSpeed = Math.round(newSpeed * 100) / 100;
+          showPlaybackNotification(undefined, roundedSpeed);
+          return roundedSpeed;
         });
       }
     };
@@ -358,21 +392,21 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
   const hasAudioChanged = () => {
     const currentAudio = map.audioData || map.audioUrl;
     const originalAudio = originalAudioRef.current;
-    
+
     // If both are null/undefined, no change
     if (!currentAudio && !originalAudio) return false;
-    
+
     // If one is null and other isn't, changed
     if (!currentAudio || !originalAudio) return true;
-    
+
     // If both are storage URLs and equal, no change
     if (isStorageUrl(currentAudio) && isStorageUrl(originalAudio)) {
       return currentAudio !== originalAudio;
     }
-    
+
     // If current is base64 (not a URL), it's new/modified audio
     if (!isStorageUrl(currentAudio)) return true;
-    
+
     // Otherwise, compare directly
     return currentAudio !== originalAudio;
   };
@@ -471,6 +505,15 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
     }
   };
 
+  const showPlaybackNotification = (overrideBpm?: number, overrideSpeed?: number) => {
+    const seconds = Math.floor(playbackTime / 1000);
+    const milliseconds = Math.floor(playbackTime % 1000);
+    const timeStr = `${seconds}s ${milliseconds.toString().padStart(3, '0')}ms`;
+    const speedPercent = Math.round((overrideSpeed || playbackSpeed) * 100);
+    const bpm = overrideBpm !== undefined ? overrideBpm : map.bpm;
+    toastInfo(`Playback: ${speedPercent}% | Position: ${timeStr} | BPM: ${bpm}`);
+  };
+
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.playbackRate = playbackSpeed;
@@ -513,7 +556,7 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
               {isUploading ? 'Saving...' : 'Save'}
             </button>
           </div>
-          
+
           {/* Upload Progress Bar */}
           {isUploading && (
             <div className="mb-2 bg-black/30 rounded-lg p-3 border border-white/5">
@@ -522,14 +565,14 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
                 <span className="text-[10px] font-bold text-pink-400">{Math.round(uploadPercent)}%</span>
               </div>
               <div className="h-2 bg-black/50 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-300 ease-out rounded-full"
                   style={{ width: `${uploadPercent}%` }}
                 />
               </div>
             </div>
           )}
-          
+
           {uploadStatus && (
             <div className={`text-[10px] font-bold p-2 rounded-lg mb-2 ${uploadStatus.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
               {uploadStatus.message}
@@ -626,6 +669,27 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
             </div>
           </div>
 
+          {/* Timeline Zoom - helpful for small screens */}
+          <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Timeline Zoom</label>
+              <div className="text-[8px] text-gray-500">Ctrl+wheel also works</div>
+            </div>
+            <div className="flex justify-between text-[10px] font-mono text-gray-400">
+              <span>Zoom Level</span>
+              <span className="text-purple-400">{(pixelsPerMs * 100).toFixed(0)}%</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="200"
+              step="1"
+              value={pixelsPerMs * 100}
+              onChange={e => setPixelsPerMs(parseFloat(e.target.value) / 100)}
+              className="w-full accent-purple-500"
+            />
+          </div>
+
           <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-3">
             <div className="flex bg-black/40 p-1 rounded-lg">
               <button
@@ -688,12 +752,16 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
         </div>
 
         <div className="mt-auto bg-black/40 p-4 rounded-2xl border border-white/10 space-y-4">
+          <div className="flex justify-between items-center mb-1">
+            <div className="text-[8px] text-gray-500 uppercase font-black">BPM: {map.bpm}</div>
+            <div className="text-[7px] text-gray-400 uppercase">Space to play/pause</div>
+          </div>
           <div>
             <div className="flex justify-between text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">
               <span>Speed</span>
-              <span className="text-pink-400">{playbackSpeed.toFixed(1)}x</span>
+              <span className="text-pink-400">{(playbackSpeed * 100).toFixed(0)}%</span>
             </div>
-            <input type="range" min="0.1" max="2.0" step="0.1" value={playbackSpeed} onChange={e => setPlaybackSpeed(parseFloat(e.target.value))} className="w-full accent-pink-500" />
+            <input type="range" min="0" max="100" step="1" value={playbackSpeed * 100} onChange={e => setPlaybackSpeed(parseFloat(e.target.value) / 100)} className="w-full accent-pink-500 h-1.5" />
           </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center text-[10px] font-mono text-gray-400">
@@ -722,7 +790,7 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ initialMap, settings, onExit,
         </div>
       </div>
 
-      <div className="flex-1 relative overflow-y-auto overflow-x-hidden bg-[#050510]" ref={scrollRef}>
+      <div className="flex-1 relative overflow-y-auto overflow-x-auto bg-[#050510] custom-scrollbar" ref={scrollRef}>
         <div
           ref={trackRef}
           className="w-full relative mx-auto"
