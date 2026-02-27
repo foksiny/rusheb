@@ -652,11 +652,120 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
         onEnd(state.score);
         return;
       }
-    }
+     }
 
-    // CHECK HOLD NOTE END CONDITIONS
-    // Handle both auto-complete (requireRelease=false) and miss condition (requireRelease=true, didn't release)
-    const holdingIds = Array.from(state.activeHoldNoteIds);
+     // AUTO-PLAY LOGIC
+     if (settings.autoPlay && !state.isPaused && !state.hasEnded) {
+       const canvas = canvasRef.current;
+       if (canvas) {
+         const width = canvas.width;
+         const height = canvas.height;
+         const hitLineY = height - 150;
+
+         // Find candidate notes that are within hit window and not yet hit
+         let candidates: ActiveNote[] = [];
+         for (const note of state.notes) {
+           if (note.hitState !== 'NONE') continue;
+           if (note.type === NoteType.MINE) continue; // Skip mines
+
+           const diff = note.time - state.currentTime;
+           // Consider notes that are within the miss window
+           if (diff < -HIT_WINDOWS.MISS) continue; // Too far past
+           if (diff > HIT_WINDOWS.PERFECT) break; // Too far future (notes are sorted)
+
+           candidates.push(note);
+         }
+
+         // Process all notes within the middle of the perfect window (centered timing)
+         for (const note of candidates) {
+           if (note.hitState !== 'NONE') continue; // Already hit by previous iteration
+           if (note.type === NoteType.MINE) continue;
+           // Hit when note is within half of the perfect window (45ms) for more centered timing
+           if (Math.abs(note.time - state.currentTime) > HIT_WINDOWS.PERFECT / 2) continue;
+
+           const lane = note.lane;
+           const x = getLaneX(width, height, lane);
+
+           // Visual flash
+           state.laneFlashes[lane] = 1.0;
+
+           if (note.type === NoteType.CLICK || note.type === NoteType.HOLD_CLICK) {
+             // Perfect hit
+             note.hitState = 'HIT';
+             note.visible = false;
+             state.combo++;
+             if (state.combo > state.score.maxCombo) state.score.maxCombo = state.combo;
+             state.score.perfect++;
+             state.score.score += SCORES.PERFECT;
+
+             const text = 'PERFECT';
+             const color = '#facc15';
+             addFloatingText(x, hitLineY - 50, text, color);
+             addParticles(x, hitLineY, color, settings.stupidlyCrazyEffects ? 60 : 30, 2);
+             playHitSound(note.type);
+
+             if (note.mutationType) handleNoteMutation(note);
+
+             // Add falling key for crazyKeyboardMode
+             if (settings.crazyKeyboardMode) {
+               const colors = ['#ec4899', '#f97316', '#facc15', '#4ade80', '#38bdf8', '#a855f7'];
+               let keyName = 'AUTO';
+               if (settings.keyMode === KeyMode.FOUR_KEYS) {
+                 const keyBindings = settings.keyBindings || DEFAULT_KEY_BINDINGS;
+                 if (lane >= 0 && lane < 4) keyName = keyBindings[lane] || 'AUTO';
+               }
+               state.fallingKeys.push({
+                 key: keyName,
+                 x: Math.random() * (width - 100) + 50,
+                 y: -50,
+                 opacity: 1,
+                 scale: 1.5 + Math.random() * 0.5,
+                 rotation: (Math.random() - 0.5) * 30,
+                 color: colors[Math.floor(Math.random() * colors.length)]
+               });
+             }
+           } else if (note.type === NoteType.HOLD) {
+             // Start the hold
+             note.hitState = 'HOLDING';
+             state.activeHoldNoteIds.add(note.id);
+             state.combo++;
+             if (state.combo > state.score.maxCombo) state.score.maxCombo = state.combo;
+             state.score.perfect++;
+             state.score.score += SCORES.PERFECT;
+
+             const text = 'PERFECT';
+             const color = '#facc15';
+             addFloatingText(x, hitLineY - 50, text, color);
+             addParticles(x, hitLineY, color, settings.stupidlyCrazyEffects ? 60 : 30, 2);
+             playHitSound(note.type);
+
+             if (note.mutationType) handleNoteMutation(note);
+
+             if (settings.crazyKeyboardMode) {
+               const colors = ['#ec4899', '#f97316', '#facc15', '#4ade80', '#38bdf8', '#a855f7'];
+               let keyName = 'AUTO';
+               if (settings.keyMode === KeyMode.FOUR_KEYS) {
+                 const keyBindings = settings.keyBindings || DEFAULT_KEY_BINDINGS;
+                 if (lane >= 0 && lane < 4) keyName = keyBindings[lane] || 'AUTO';
+               }
+               state.fallingKeys.push({
+                 key: keyName,
+                 x: Math.random() * (width - 100) + 50,
+                 y: -50,
+                 opacity: 1,
+                 scale: 1.5 + Math.random() * 0.5,
+                 rotation: (Math.random() - 0.5) * 30,
+                 color: colors[Math.floor(Math.random() * colors.length)]
+               });
+             }
+           }
+         }
+       }
+     }
+
+     // CHECK HOLD NOTE END CONDITIONS
+     // Handle both auto-complete (requireRelease=false) and miss condition (requireRelease=true, didn't release)
+     const holdingIds = Array.from(state.activeHoldNoteIds);
     for (const id of holdingIds) {
       const note = state.notes.find(n => n.id === id);
       if (note && note.hitState === 'HOLDING') {
@@ -1190,23 +1299,26 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ beatmap, settings, onEnd, onAbo
     if (state.isPlaying) requestRef.current = requestAnimationFrame(update);
   }, [beatmap, settings, onEnd, playHitSound, drawNote]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.repeat) return;
-      if (e.key === 'Escape' || e.code === 'Space') { togglePause(); return; }
+   useEffect(() => {
+     const handleKeyDown = (e: KeyboardEvent) => {
+       if (e.repeat) return;
+       if (e.key === 'Escape' || e.code === 'Space') { togglePause(); return; }
 
-      // Check if key is allowed based on keyMode
-      const keyMode = settings.keyMode || KeyMode.ALL_KEYS;
-      const keyBindings = settings.keyBindings || DEFAULT_KEY_BINDINGS;
+       // Ignore input when autoPlay is enabled
+       if (settings.autoPlay) return;
 
-      if (keyMode === KeyMode.FOUR_KEYS) {
-        const pressedKey = e.key.toUpperCase();
-        if (!keyBindings.includes(pressedKey)) {
-          return; // Ignore keys not in the binding list
-        }
-      }
+       // Check if key is allowed based on keyMode
+       const keyMode = settings.keyMode || KeyMode.ALL_KEYS;
+       const keyBindings = settings.keyBindings || DEFAULT_KEY_BINDINGS;
 
-      processHit(undefined, e.key.toUpperCase(), e.code);
+       if (keyMode === KeyMode.FOUR_KEYS) {
+         const pressedKey = e.key.toUpperCase();
+         if (!keyBindings.includes(pressedKey)) {
+           return; // Ignore keys not in the binding list
+         }
+       }
+
+       processHit(undefined, e.key.toUpperCase(), e.code);
 
       // Add falling key for crazy keyboard mode
       if (settings.crazyKeyboardMode) {

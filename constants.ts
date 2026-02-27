@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS = {
   practiceMode: false,
   crazyKeyboardMode: false,
   stupidlyCrazyEffects: false,
+  autoPlay: false,
   masterVolume: 1.0,
   sfxVolume: 0.8,
   musicVolume: 0.8,

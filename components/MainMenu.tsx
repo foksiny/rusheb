@@ -686,6 +686,16 @@ const MainMenu: React.FC<MainMenuProps> = ({ onStart, onEdit, settings, onSettin
               />
             </label>
 
+            <label className="flex items-center justify-between cursor-pointer group bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-all duration-300 border border-transparent hover:border-pink-500/30 hover-lift">
+              <span className="font-bold text-gray-200">Auto Play</span>
+              <input
+                type="checkbox"
+                checked={settings.autoPlay}
+                onChange={(e) => updateSetting('autoPlay', e.target.checked)}
+                className="w-6 h-6 accent-pink-500"
+              />
+            </label>
+
             <div className="flex flex-col gap-2 mt-2 bg-white/5 p-4 rounded-xl">
               <span className="font-bold text-gray-200">Key Mode</span>
               <select

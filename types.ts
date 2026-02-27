@@ -91,6 +91,7 @@ export interface GameSettings {
   practiceMode: boolean; // Slows down time and disables speed effects
   crazyKeyboardMode: boolean; // Visual flair - shows pressed keys falling
   stupidlyCrazyEffects: boolean; // Extra visual effects for everything
+  autoPlay: boolean; // Automatically plays the beatmap perfectly without user input
   masterVolume: number; // 0.0 to 1.0
   sfxVolume: number; // 0.0 to 1.0
   musicVolume: number; // 0.0 to 1.0
